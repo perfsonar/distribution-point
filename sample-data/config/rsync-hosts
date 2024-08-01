@@ -1,0 +1,8 @@
+#
+# IPs authorized to mirror anything we mirror
+#
+
+# TODO: Remove these
+# All IPs
+0.0.0.0/0
+::

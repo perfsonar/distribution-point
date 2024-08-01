@@ -1,0 +1,8 @@
+# Data Synchronizer
+
+[program:sync]
+command=/usr/bin/sync-data
+user=root
+priority=90
+stdout_syslog=true
+stderr_syslog=true

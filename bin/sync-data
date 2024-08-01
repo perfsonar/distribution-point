@@ -1,0 +1,70 @@
+#!/bin/sh -e
+#
+# Repeatedly synchronize repositories
+#
+
+# This can be overridden on the command line
+DATA=${1-/data}
+
+CONFIG="${DATA}/config"
+REPO="${DATA}/repo"
+
+mkdir -p "${REPO}"
+
+
+do_mirrors()
+{
+    while read LINE
+    do
+
+	DEST=$(echo "${LINE}" | awk '{ print $1 }')
+	if echo "${DEST}" | egrep -qe '(^\.\./)|(/\.\./)'
+	then
+	    echo "Ignoring invalid destination '${DEST}'" 1>&2
+	    continue
+	fi
+
+	SOURCE=$(echo "${LINE}" | awk '{ print $2 }')
+	if ! echo "${SOURCE}" | egrep -qe '^rsync://'
+	then
+	    echo "Ignoring invalid source '${SOURCE}'" 1>&2
+	    continue
+	fi
+
+        # Don't care if this fails.  Keep trying.
+	if rsync --archive --delete "${SOURCE}" "${REPO}/${DEST}"
+	then
+	    echo "FAILED to sync ${SOURCE} -> ${DEST}"
+	fi
+
+    done
+}
+
+
+
+MIRROR_SOURCES="${CONFIG}/mirror-sources"
+while true
+do
+
+    # Sync
+    
+    if [ -e "${MIRROR_SOURCES}" ]
+    then
+	sed -e 's/\s*#.*$//; /^\s*$/d' "${MIRROR_SOURCES}" \
+	    | do_mirrors
+    fi
+
+    SYNC_INTERVAL=$([ -e "${CONFIG}/sync-interval" ] \
+		    && cat "${CONFIG}/sync-interval" \
+			|| echo 10800)
+
+    # Sleep
+
+    if ! echo "${SYNC_INTERVAL}" | egrep -qxe '[0-9]+'
+    then
+	echo "Invalid SYNC_INTERVAL '${SYNC_INTERVAL}'" 1>&2
+	exit 1
+    fi 
+    sleep "${SYNC_INTERVAL}"
+
+done

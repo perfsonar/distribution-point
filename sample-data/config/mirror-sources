@@ -1,0 +1,22 @@
+#
+# Sites to mirror
+#
+
+# Directory             Rsync Source
+# ---------	        ------------
+
+# TODO: Enable this
+#perfsonar               rsync://webprod6.internet2.edu/rpms/
+
+# TODO: Remove this
+# Compact subset used for testing
+test                    rsync://webprod6.internet2.edu/rpms/el9/SRPMS/latest/
+single-file             rsync://webprod6.internet2.edu/rpms/el9/SRPMS/latest/repodata/repomd.xml
+
+
+
+# Invalid entries and failures
+#junk                    invalid-source
+../invalid/dest/1	rsync://foo.bar/org/
+#invalid/dest/../2	rsync://foo.bar/org/
+fail                    rsync://webprod6.internet2.edu/does/not/exist

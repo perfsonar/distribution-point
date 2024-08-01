@@ -1,0 +1,66 @@
+#!/bin/sh -e
+
+DATA="/data"
+
+CONFIG="${DATA}/config"
+LOG="${DATA}/log"
+REPO="${DATA}/repo"
+
+#
+# Log Directory
+#
+
+if [ ! -d "${LOG}" ]
+then
+    # Create a new log area in the data volume
+    echo "Creating new log in ${DATA}"
+    mkdir -p "${LOG}"
+    (cd /var/log && tar cf - .) | (cd "${LOG}" && tar xpf -)
+fi
+mv /var/log /var/log-dist
+ln -s "${LOG}" /var/log
+
+
+#
+# Lighttpd
+#
+
+mkdir -p "${REPO}"
+chown -R lighttpd:lighttpd "${REPO}"
+
+# If there's no cert in $CONFIG, generate a self-signed cert
+
+LIGHTTPD_SSL="/etc/lighttpd/ssl"
+mkdir -p "${LIGHTTPD_SSL}"
+if [ -f "${CONFIG}/key.pem" -a -f "${CONFIG}/cert.pem" ]
+then
+    # Copy the existing cert bits
+    echo Using supplied key and cert
+    cp -f "${CONFIG}/key.pem" "${CONFIG}/cert.pem" "${LIGHTTPD_SSL}"
+else
+    # Create a self-signed cert
+    echo Generating self-signed key and cert
+    openssl req \
+	    -quiet \
+	    -x509 \
+	    -newkey rsa:4096 \
+	    -keyout "${LIGHTTPD_SSL}/key.pem" \
+	    -out "${LIGHTTPD_SSL}/cert.pem" \
+	    -days 365 \
+	    -subj '/CN=localhost' \
+	    -nodes \
+	    -sha256
+    cp "${LIGHTTPD_SSL}/key.pem" "${LIGHTTPD_SSL}/cert.pem" "${CONFIG}"
+fi
+
+# Lock it all down
+cat "${LIGHTTPD_SSL}/key.pem" "${LIGHTTPD_SSL}/cert.pem" > "${LIGHTTPD_SSL}/localhost.pem"
+chmod 400 "${LIGHTTPD_SSL}/localhost.pem"
+rm -rf "${LIGHTTPD_SSL}/key.pem" "${LIGHTTPD_SSL}/cert.pem"
+
+
+#
+# Let 'er rip.
+#
+
+exec supervisord --nodaemon --config /etc/supervisord.conf
