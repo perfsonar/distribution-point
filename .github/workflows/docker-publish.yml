@@ -56,7 +56,7 @@ jobs:
           tags: |
             type=schedule
             type=ref,event=branch
-            type=ref,event=tags
+            type=ref,event=tag
             type=ref,event=pr
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') }}
 
