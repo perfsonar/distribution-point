@@ -39,8 +39,7 @@ Vagrant.configure("2") do |config|
         dnf -y install \
             podman \
             podman-docker \
-	    podman-compose \
-            git
+	    podman-compose
 
 	systemctl enable --now podman
 
@@ -51,6 +50,14 @@ Vagrant.configure("2") do |config|
         sed -i -e '/^\s*force_mask\s*=\s*/d' /etc/containers/storage.conf
         sed -i -e 's/\(\[storage\.options\.overlay\]\)/\1\nforce_mask = "700"\n/' /etc/containers/storage.conf
 
+    SHELL
+
+    #
+    # Distribution Point
+    #
+
+    config.vm.provision "podman", type: "shell", run: "once", inline: <<-SHELL
+        true
     SHELL
 
 end
