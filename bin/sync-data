@@ -12,6 +12,9 @@ REPO="${DATA}/repo"
 mkdir -p "${REPO}"
 
 
+FIRST_TIME=true
+
+
 do_mirrors()
 {
     while read LINE
@@ -31,9 +34,17 @@ do_mirrors()
 	    continue
 	fi
 
+	DEST_DIR="${REPO}/${DEST}"
+	mkdir -p "${DEST_DIR}"
+
         # Don't care if this fails.  Keep trying.
-	if rsync --archive --delete "${SOURCE}" "${REPO}/${DEST}"
+	if rsync --archive --delete "${SOURCE}" "${DEST_DIR}" 2>&1
 	then
+	    if ${FIRST_TIME}
+	    then
+		echo "First-time sync ${SOURCE} -> ${DEST}"
+	    fi
+	else
 	    echo "FAILED to sync ${SOURCE} -> ${DEST}"
 	fi
 
@@ -52,10 +63,11 @@ do
     then
 	sed -e 's/\s*#.*$//; /^\s*$/d' "${MIRROR_SOURCES}" \
 	    | do_mirrors
+	FIRST_TIME=false
     fi
 
     SYNC_INTERVAL=$([ -e "${CONFIG}/sync-interval" ] \
-		    && cat "${CONFIG}/sync-interval" \
+		    && sed -e 's/\s*#.*$//; /^\s*$/d' "${CONFIG}/sync-interval" \
 			|| echo 10800)
 
     # Sleep

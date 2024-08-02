@@ -1,0 +1,56 @@
+#!/bin/sh -e
+#
+# Update the rsync daemon config from the allowed IP list, restarting
+# it if necessary.
+#
+
+CHECK_INTERVAL=60
+RSYNC_HOSTS=/data/config/rsync-hosts
+
+
+WORK=$(mktemp -d)
+cleanup()
+{
+    rm -rf "${WORK}"
+}
+trap cleanup EXIT
+
+
+# This primes the loop for a forced rebuild on the first iteration.
+LAST_DIGEST=
+
+RSYNCD_CONF="/etc/rsyncd.conf"
+NEW_RSYNCD_CONF="${WORK}/new-rsyncd.conf"
+NEW_IPS="${WORK}/ips"
+
+while true
+do
+    DIGEST=$(sha1sum "${RSYNC_HOSTS}")
+
+    if [ "${DIGEST}" != "${LAST_DIGEST}" ]
+    then
+	echo "Configuring rsync hosts"
+
+	# Write a new configuration
+	rm -f "${NEW_CONFIG}" "${NEW_IPS}"
+
+	# Decomment and join the IP list
+	sed -e 's/\s*#.*$//; /^\s*$/d' "${RSYNC_HOSTS}" \
+	    | tr '\n' ',' \
+	    | sed -e 's/,$//' \
+	    > "${NEW_IPS}"
+
+	# Merge it into rsyncd.conf
+	cp -f "${RSYNCD_CONF}" "${NEW_RSYNCD_CONF}"
+	sed -i -e "s|\\(hosts allow = \\).*\$|\\1$(cat "${NEW_IPS}")|" "${NEW_RSYNCD_CONF}"
+
+	cp -f "${NEW_RSYNCD_CONF}" "${RSYNCD_CONF}"
+	supervisorctl restart rsyncd
+
+	LAST_DIGEST="${DIGEST}"
+
+    fi
+
+    sleep "${CHECK_INTERVAL}"
+
+done

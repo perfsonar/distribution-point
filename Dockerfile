@@ -9,13 +9,8 @@ FROM ${FROM}
 VOLUME /data
 
 
-EXPOSE 443
-EXPOSE 873
-
-
 # TODO: Can remove curl and vim
 RUN apk add \
-    curl vim \
     lighttpd \
     logrotate \
     openssl \

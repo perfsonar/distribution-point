@@ -1,6 +1,6 @@
-# Docker perfSONAR Repo Mirror
+# Distribution point for perfSONAR and Other Things
 
-TODO: Write this.
+This Docker container establishes a web and Rsync server 
 
 ## Prerequisites
 
@@ -10,12 +10,13 @@ This container requires the following:
 
  * A directory on the host with enough space to hold whatever is being
    mirrored.  This directory is shared into the container and will be
-   referred to as the "data directory" or `/data`.
+   referred to as the _data directory_ or `/data`.  The
+   currently-recommended size for mirroring perfSONAR is 100 GB.
 
  * A connection to the outside that allows inbound HTTPS (port 443)
    connections and outbound Rsync (port 873) connections.  If the
-   container is to serve as a synchronization source, inbound Rsync
-   (port 873) must be allowed as well.
+   container is to serve as a synchronization source for other hosts,
+   inbound Rsync (port 873) must be allowed as well.
 
 
 ## Configruration
@@ -45,18 +46,17 @@ directory will appear.  It is subject to these rules:
    the root of the web server and any other subdirectories.  If used,
    this should be the only entry in the file.
 
-Column 2 is an `rsync://` URL where the contents of can be mirrored.
+Column 2 is an `rsync://` URL pointing to the source of what is to be
+mirrored.
 
 Example file
 ```
 foo    rsync://distro.example.edu/foo/
-# This is disabled:
-#bar   rsync://downloads.example.net/mirrors/bar/
-baz    rsync://www.example.org/stuff/baz/
+bar    rsync://www.example.org/stuff/bar/
 ```
 
 If this file does not exist, no synchronization will take place and
-the contents of `/data/repo` will be served up as a static site.
+the contents of `/data/repo` will be served up as static content.
 
 
 ### Rsync Host Authorization
@@ -65,14 +65,14 @@ The `rsync-hosts` file contains a list of IP addresses and CIDR blocks
 that are allowed access via Rsync.
 
 If this file is not present when the container starts, the Rsync
-service will be disabled until it is restarted with it present.
+service will only allow connections originating within the container.
 
 
 ### Web Server SSL
 
 Place valid `key.pem` and `cert.pem` files in the configuration
 directory to use SSL.  If both of these files are not present, the
-container will generate self-signed filesand add them to the
+container will generate self-signed files and add them to the
 configuration directory.
 
 
@@ -96,8 +96,11 @@ to remote users of rsync.
 
 ```
 docker run \
-    --volume /path/to/local/storage:/data:rw \
+    --volume /path/to/local/storage:/data:Z \
     --expose 443 \
-    --expose 873
+    --expose 873 \
     TODO-image-name
 ```
+
+Note that ports `443` and `873` must be exposed manually so only the
+desired services are shown to the outside.

@@ -6,3 +6,7 @@ user=root
 priority=90
 stdout_syslog=true
 stderr_syslog=true
+
+# This will be started by maintain-rsyncd after it generates the first
+# cut of /etc/rsyncd.conf.
+autostart=false

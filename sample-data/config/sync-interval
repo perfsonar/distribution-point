@@ -1,1 +1,5 @@
-30
+#
+# Time between synchronization attempts, in seconds
+#
+
+3600

@@ -1,0 +1,8 @@
+# Rsyncd Maintainer
+
+[program:maintain-rsyncd]
+command=/usr/bin/maintain-rsyncd
+user=root
+priority=91
+stdout_syslog=true
+stderr_syslog=true
