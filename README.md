@@ -49,7 +49,7 @@ directory will appear.  It is subject to these rules:
 Column 2 is an `rsync://` URL pointing to the source of what is to be
 mirrored.
 
-Example file
+Example file:
 ```
 foo    rsync://distro.example.edu/foo/
 bar    rsync://www.example.org/stuff/bar/
