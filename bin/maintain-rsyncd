@@ -45,7 +45,11 @@ do
 	sed -i -e "s|\\(hosts allow = \\).*\$|\\1$(cat "${NEW_IPS}")|" "${NEW_RSYNCD_CONF}"
 
 	cp -f "${NEW_RSYNCD_CONF}" "${RSYNCD_CONF}"
-	supervisorctl restart rsyncd
+	if [ "$(supervisorctl status rsyncd | awk '{ print $2 }')" = 'RUNNING' ]
+	then
+	    supervisorctl stop rsyncd
+	fi
+	supervisorctl start rsyncd
 
 	LAST_DIGEST="${DIGEST}"
 
