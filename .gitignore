@@ -1,0 +1,5 @@
+# Stuff we don't care about
+
+.built
+*~
+
