@@ -57,22 +57,23 @@ run: $(BUILT) $(REPO) $(LOG) $(TMP_DATA)
 		--name "$(CONTAINER_NAME)" \
 		"$(IMAGE)"
 
-# Log into the persisted container
+# Log into the test container
 shell:
 	$(DOCKER) exec -it "$(CONTAINER_NAME)" /bin/sh
 
 
-# Stop the persisted container
+# Stop the test container
 halt:
 	$(DOCKER) exec -it "$(CONTAINER_NAME)" kill 1
 
 
-# Remove the container
+# Remove the test container and its image
 rm:
 	$(DOCKER) rm -f "$(CONTAINER_NAME)"
 	$(DOCKER) image rm -f "$(IMAGE)"
 
 
+# Remove all build by-products
 clean: rm
 	rm -rf $(TO_CLEAN)
 	$(SUDO) rm -rf $(TO_CLEAN_ROOT)

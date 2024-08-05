@@ -1,6 +1,7 @@
-# Distribution point for perfSONAR and Other Things
+# Distribution Point
 
-This Docker container establishes a web and Rsync server 
+This Docker container establishes a web and, optionally, an rsync
+server for use in distributing perfSONAR and other things.
 
 ## Prerequisites
 
@@ -13,17 +14,20 @@ This container requires the following:
    referred to as the _data directory_ or `/data`.  The
    currently-recommended size for mirroring perfSONAR is 100 GB.
 
- * A connection to the outside that allows inbound HTTPS (port 443)
-   connections and outbound Rsync (port 873) connections.  If the
-   container is to serve as a synchronization source for other hosts,
-   inbound Rsync (port 873) must be allowed as well.
+ * A connection to the outside that allows these connections:
+
+   * Inbound HTTPS (TCP port 443)
+   * Outbound rsync (TCP port 873)
+   * Inbound rsync (TCP port 873) if the server is to provide rsync
+     service to other servers.
 
 
 ## Configruration
 
-The container's behavior is configured using files in `/data/config`.
+The container's behavior is configured using files in the
+`/data/config` subdirectory.
 
-Unless otherwise noted, these files are re-read regularly.
+All configuration is re-read and re-applied on a regular basis.
 
 
 ### Mirror Source List
@@ -56,16 +60,31 @@ bar    rsync://www.example.org/stuff/bar/
 ```
 
 If this file does not exist, no synchronization will take place and
-the contents of `/data/repo` will be served up as static content.
+the contents of `/data/repo` will be served as-is.
+
+This file is re-read at the beginning of each synchronization cycle.
+
+
+### Synchronization Interval
+
+The `sync-interval` file contains an integer indicating the number of
+seconds between the completion of one synchronization cycle and the
+next.  If it is not present, a default of `10800` (three hours) will
+be used.
+
+This file is re-read at the conclusion of each synchronization cycle.
 
 
 ### Rsync Host Authorization
 
-The `rsync-hosts` file contains a list of IP addresses and CIDR blocks
-that are allowed access via Rsync.
+The `rsync-hosts` file contains a list of hosts, one per line, that
+will be allowed to connect to the rsync daemon.  Valid entry are all
+those listed in the rsync daemon's [allowed hosts
+format](https://download.samba.org/pub/rsync/rsyncd.conf.5#hosts_allow)
+except `@netgroup`, as no netgroups are provided in the container.
 
-If this file is not present when the container starts, the Rsync
-service will only allow connections originating within the container.
+This file is checked for changes once per minute and rsyncd is
+restarted if it differs.
 
 
 ### Web Server SSL
@@ -75,20 +94,14 @@ directory to use SSL.  If both of these files are not present, the
 container will generate self-signed files and add them to the
 configuration directory.
 
-
-### Synchronization Interval
-
-The `sync-interval` file contains an integer indicating the number of
-seconds between each round of synchronization.
-
-If this file is not present, a default of `10800` (three hours) will
-be used.
+These files are read once when the container starts.
 
 
 ### Message of the Day
 
 The `motd` file, if present, contains a message that will be provided
-to remote users of rsync.
+to remote users of rsync and when the web server generates a directory
+listing.
 
 
 
@@ -99,8 +112,29 @@ docker run \
     --volume /path/to/local/storage:/data:Z \
     --expose 443 \
     --expose 873 \
-    TODO-image-name
+    ghcr.io/perfsonar/distribution-point:latest
 ```
 
 Note that ports `443` and `873` must be exposed manually so only the
 desired services are shown to the outside.
+
+
+## Developer Notes
+
+The `Makefile` at the top level of the source tree contains these
+targets for convenience:
+
+ * `build` - Builds a test container image.
+
+ * `run` - Builds a copy of the `sample-data` directory in `/tmp` and
+   Creates and runs a test container until stopped with a `SIGINT` or
+   `Ctrl-C`.  This is the default target.
+
+ * `shell` - Runs an interactiveshell inside the test container.
+
+ * `halt` - Stops the test container.
+
+ * `rm` - Removes the test container and images from Docker.
+
+ * `clean` - Removes the test container and images from Docker and all
+   by-products of the `build` and `run` targets.
