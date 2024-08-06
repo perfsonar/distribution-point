@@ -1,0 +1,87 @@
+#
+# Vagrantfile for use in testing the distribution point
+#
+
+name = "distribution-point"
+default_box = "almalinux/9"
+
+
+Vagrant.configure("2") do |config|
+
+    if Vagrant.has_plugin?("vagrant-vbguest")
+      # Don't allow upgrades; the box has what it has.
+      config.vbguest.auto_update = false
+    end
+
+    # Basic configuration
+
+    config.vm.provider "virtualbox" do |vbox|
+      # The default E1000 has a security vulerability.
+      vbox.default_nic_type = "82543GC"
+      vbox.cpus = 2
+      vbox.memory = 4096
+      config.vm.box = default_box
+      config.vm.hostname = name
+    end
+
+    unless Vagrant.has_plugin?("vagrant-disksize")
+      raise  Vagrant::Errors::VagrantError.new, "vagrant-disksize plugin is missing. Please install it using 'vagrant plugin install vagrant-disksize' and rerun 'vagrant up'"
+    end
+    config.disksize.size = '100GB'
+
+    #
+    # Public Network
+    #
+
+    route_table_base = 10
+    route_table_num = route_table_base
+
+    # Was enp6s0f0
+    host_if = "enp6s0f1"
+
+    guest_if = "enp0s8"
+    family = 4
+    # adhoc.ps.dev.internet2.edu
+    addr = "163.253.37.222"
+    cidr = "27"
+    default = "163.253.37.193"
+
+    config.vm.network "public_network", bridge: host_if, auto_config: false
+
+    config.vm.provision "public_network", type: "shell", run: "once", inline: <<-SHELL
+
+      # Public Interface
+
+      ip -#{family} address replace #{addr}/#{cidr} dev #{guest_if}
+      ip link set dev #{guest_if} up
+      ip -#{family} address show dev #{guest_if}
+
+      # Traffic sourced from this interface goes out the same way.
+      #ip -#{family} route flush table #{route_table_num}
+      #ip -#{family} route add default via "#{default}" dev "#{guest_if}" table #{route_table_num}
+      #ip -#{family} rule add from #{addr} table #{route_table_num}
+
+      # The global default is still out this interface
+      ip -#{family} route del default
+      ip -#{family} route add default via "#{default}" dev "#{guest_if}"
+
+      echo "Routes:"
+      ip -#{family} route
+
+    SHELL
+
+    #
+    # Podman
+    #
+
+    config.vm.provision "distribution-point", type: "shell", run: "once", inline: <<-SHELL
+        rm -rf /data
+        cp -r /vagrant/data /data
+        /vagrant/bootstrap
+  SHELL
+
+end
+
+
+# -*- mode: ruby -*-
+# vi: set ft=ruby :

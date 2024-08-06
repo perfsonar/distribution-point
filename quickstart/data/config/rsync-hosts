@@ -1,0 +1,18 @@
+#
+# IPs authorized to mirror via rsync
+#
+
+# Internet2 perfSONAR Development Farm
+
+207.75.165.70
+2001:48a8:68fe:5::70
+163.253.37.160/27
+163.253.37.192/27
+2001:0468:2620:0030::/64
+2001:0468:2620:0031::/64
+
+
+# Everything Else
+
+127.0.0.0/8
+::1

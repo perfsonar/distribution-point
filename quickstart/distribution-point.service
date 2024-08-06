@@ -1,0 +1,14 @@
+[Unit]
+Description=perfSONAR Distribution Point Container
+After=__DOCKER__.service
+Requires=__DOCKER__.service
+
+[Service]
+TimeoutStartSec=0
+Restart=always
+ExecStartPre=-/usr/bin/__DOCKER__ stop --ignore %n
+ExecStartPre=-/usr/bin/__DOCKER__ rm --force --ignore %n
+ExecStart=/usr/bin/__DOCKER__ run --pull newer --rm --name %n --publish 443:443 --expose 873:873 --volume /data:/data:Z ghcr.io/perfsonar/distribution-point:latest
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+#
+# Sites to mirror
+#
+
+# Directory             Rsync Source
+# ---------	        ------------
+
+#perfsonar/rpm           rsync://webprod6.internet2.edu/rpms/
+#perfsonar/debian        rsync://perfsonar-repo.geant.org/perfsonar-debian/
+
+
+# Compact subset used for testing
+test                    rsync://webprod6.internet2.edu/rpms/el9/SRPMS/latest/

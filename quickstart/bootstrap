@@ -1,0 +1,62 @@
+#!/bin/sh -e
+
+PRODUCT=distribution-point
+
+die()
+{
+    echo "$@" 1>&2
+    exit 1
+}
+
+
+mkdir -p /data
+
+
+
+OS_RELEASE="/etc/os-release"
+if [ -e "${OS_RELEASE}" ]
+then
+    . "${OS_RELEASE}"
+else
+    die "Can't find ${OS_RELEASE}"
+fi
+
+if [ -n "${ID_LIKE}" ]
+then
+    ID=$(echo "${ID_LIKE}" | awk '{ print $1 }')
+fi
+
+WHEREAMI=$(dirname $0)
+
+case "${ID}" in
+
+    rhel|centos|fedora)
+	dnf -y install podman podman-docker firewalld
+	touch /etc/containers/nodocker
+	DOCKER=podman
+	;;
+
+    debian)
+	apt-get -y install docker firewalld
+	DOCKER=docker
+	;;
+
+    *)
+	die "Unsupported OS '${ID}'"
+	;;
+
+esac
+
+
+# Firewalld
+
+systemctl enable --now firewalld
+firewall-cmd --permanent --add-service=https
+firewall-cmd --permanent --add-service=rsyncd
+firewall-cmd --reload
+
+# Docker/Podman/Whatever
+
+sed -e "s/__DOCKER__/${DOCKER}/g" "${WHEREAMI}/${PRODUCT}.service" \
+    > "/usr/lib/systemd/system/${PRODUCT}.service"
+systemctl enable --now "${PRODUCT}"
